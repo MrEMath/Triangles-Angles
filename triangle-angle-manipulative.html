@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Remote Interior Angle Manipulative</title>
+  <style>
+    body { margin: 0; display: flex; justify-content: center; padding: 20px; }
+    svg { border: 1px solid #ccc; touch-action: none; }
+    .edge { stroke: #000; stroke-width: 6; fill: none; stroke-linecap: round; }
+    .ray { stroke: #000; stroke-width: 6; fill: none; marker-end: url(#arrow); }
+    .handle { fill: red; cursor: pointer; }
+    .fixed-point { fill: #004c7f; }
+    .angle-label {
+  font-family: system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  fill: #333;
+  text-anchor: middle; /* center on x */
+  dominant-baseline: middle; /* center on y */
+  pointer-events: none;   /* ignore mouse events */
+  user-select: none;      /* prevent selection highlight */
+    }
+    
+.angle-arc {
+  stroke-width: 6;
+  fill: none;
+}
+
+.angle-left {
+  stroke: #0077b6;   /* left interior: blue */
+}
+
+.angle-top {
+  stroke: #00a676;   /* top interior: green */
+}
+
+.angle-right-int {
+  stroke: #ffb703;   /* right interior: yellow/orange */
+}
+
+.angle-right-ext-top {
+  stroke: #00a676;   /* exterior slice congruent to top interior (same green) */
+}
+
+.angle-right-ext-left {
+  stroke: #0077b6;   /* exterior slice congruent to left interior (same blue) */
+}
+/* label colors to match slices */
+.label-left            { fill: #0077b6; }
+.label-top             { fill: #00a676; }
+.label-right-int       { fill: #ffb703; }
+.label-right-ext-top   { fill: #00a676; }
+.label-right-ext-left  { fill: #0077b6; }
+  </style>
+</head>
+<body>
+
+<svg id="board" width="900" height="500" viewBox="0 0 900 500">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L10,3 L0,6 z" fill="#000" />
+    </marker>
+  </defs>
+
+  <!-- Angle slices behind triangle -->
+<path id="angleLeftInterior"  class="angle-arc angle-left"></path>
+<path id="angleTopInterior"   class="angle-arc angle-top"></path>
+<path id="angleRightInterior" class="angle-arc angle-right-int"></path>
+<path id="angleRightExteriorTop"  class="angle-arc angle-right-ext-top"></path>
+<path id="angleRightExteriorLeft" class="angle-arc angle-right-ext-left"></path>
+
+<text id="labelLeft"    class="angle-label label-left"></text>
+<text id="labelTop"     class="angle-label label-top"></text>
+<text id="labelRight"   class="angle-label label-right-int"></text>
+<text id="labelExtTop"  class="angle-label label-right-ext-top"></text>
+<text id="labelExtLeft" class="angle-label label-right-ext-left"></text>
+  <!-- Base ray (static) -->
+  <line id="baseRay" class="edge" x1="100" y1="420" x2="800" y2="420" marker-end="url(#arrow)"></line>
+
+  <!-- Triangle edges -->
+  <polyline id="triangle" class="edge" points=""></polyline>
+
+  <!-- Draggable triangle vertices -->
+  <!-- Left vertex is implicit at (100,420), no handle shown -->
+  <circle id="B" class="handle" r="9" cx="450" cy="120"></circle>  <!-- top vertex -->
+  <circle id="C" class="handle" r="9" cx="600" cy="420"></circle>  <!-- right vertex on base -->
+</svg>
+
+<script>
+const svg = document.getElementById('board');
+const tri = document.getElementById('triangle');
+
+const B = document.getElementById('B'); // top
+const C = document.getElementById('C'); // right on base
+
+const angleLeftInt       = document.getElementById('angleLeftInterior');
+const angleTopInt        = document.getElementById('angleTopInterior');
+const angleRightInt      = document.getElementById('angleRightInterior');
+const angleRightExtTop   = document.getElementById('angleRightExteriorTop');
+const angleRightExtLeft  = document.getElementById('angleRightExteriorLeft');
+const labelLeft    = document.getElementById('labelLeft');
+const labelTop     = document.getElementById('labelTop');
+const labelRight   = document.getElementById('labelRight');
+const labelExtTop  = document.getElementById('labelExtTop');
+const labelExtLeft = document.getElementById('labelExtLeft');
+
+
+// Fixed left base vertex
+const leftBase = { x: 100, y: 420 };
+
+// --- Geometry helpers ---
+function angleBetween(p, q, r) {
+  const u = {x: p.x - q.x, y: p.y - q.y};
+  const v = {x: r.x - q.x, y: r.y - q.y};
+  const dot = u.x * v.x + u.y * v.y;
+  const mu = Math.hypot(u.x, u.y);
+  const mv = Math.hypot(v.x, v.y);
+  if (!mu || !mv) return 0;
+  let cos = dot / (mu * mv);
+  cos = Math.max(-1, Math.min(1, cos));
+  return Math.acos(cos);
+}
+
+function polarToCartesian(center, radius, angleRad) {
+  return {
+    x: center.x + radius * Math.cos(angleRad),
+    y: center.y + radius * Math.sin(angleRad)
+  };
+}
+
+function describeArc(center, radius, startAngle, endAngle) {
+  const start = polarToCartesian(center, radius, startAngle);
+  const end = polarToCartesian(center, radius, endAngle);
+  const largeArcFlag = endAngle - startAngle <= Math.PI ? "0" : "1";
+  return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`;
+}
+
+// --- Dragging handles ---
+let draggingHandle = null;
+
+function getMousePos(evt) {
+  const pt = svg.createSVGPoint();
+  pt.x = evt.clientX;
+  pt.y = evt.clientY;
+  const m = svg.getScreenCTM().inverse();
+  return pt.matrixTransform(m);
+}
+
+// Top vertex: free drag
+B.addEventListener('pointerdown', e => {
+  draggingHandle = B;
+  B.setPointerCapture(e.pointerId);
+});
+B.addEventListener('pointerup', e => {
+  draggingHandle = null;
+  B.releasePointerCapture(e.pointerId);
+});
+B.addEventListener('pointermove', e => {
+  if (draggingHandle !== B) return;
+  const pos = getMousePos(e);
+  B.setAttribute('cx', pos.x);
+  B.setAttribute('cy', pos.y);
+  update();
+});
+
+// Right vertex: constrained horizontally to base line y=420
+C.addEventListener('pointerdown', e => {
+  draggingHandle = C;
+  C.setPointerCapture(e.pointerId);
+});
+C.addEventListener('pointerup', e => {
+  draggingHandle = null;
+  C.releasePointerCapture(e.pointerId);
+});
+C.addEventListener('pointermove', e => {
+  if (draggingHandle !== C) return;
+  const pos = getMousePos(e);
+  C.setAttribute('cx', pos.x);
+  C.setAttribute('cy', leftBase.y); // lock to base y
+  update();
+});
+function placeAngleLabel(labelEl, center, radius, startAngle, endAngle, angleRad) {
+  const mid = (startAngle + endAngle) / 2;
+  const r   = radius * 0.6; // a bit inside the arc
+  const pt  = polarToCartesian(center, r, mid);
+  const degrees = Math.round(angleRad * 180 / Math.PI); // [web:108][web:110][web:116]
+  labelEl.setAttribute('x', pt.x);
+  labelEl.setAttribute('y', pt.y);
+  labelEl.textContent = degrees + '°';
+}
+
+function update() {
+  const pL = leftBase; // left base
+  const pB = { x: +B.getAttribute('cx'), y: +B.getAttribute('cy') }; // top
+  const pC = { x: +C.getAttribute('cx'), y: +C.getAttribute('cy') }; // right
+
+  // triangle
+  tri.setAttribute('points', `${pL.x},${pL.y} ${pB.x},${pB.y} ${pC.x},${pC.y}`);
+
+  // angles at vertices (radians)
+  const angleLeft  = angleBetween(pB, pL, pC);
+  const angleTop   = angleBetween(pL, pB, pC);
+  const angleRight = angleBetween(pL, pC, pB);
+
+  // interior at LEFT vertex (slice)
+  const rL  = 100;
+  const vLB = { x: pB.x - pL.x, y: pB.y - pL.y };
+  const vLC = { x: pC.x - pL.x, y: pC.y - pL.y };
+  let startL = Math.atan2(vLB.y, vLB.x);
+  let endL   = Math.atan2(vLC.y, vLC.x);
+
+  const arcL     = describeArc(pL, rL, startL, endL);
+  const startPtL = polarToCartesian(pL, rL, startL);
+  const endPtL   = polarToCartesian(pL, rL, endL);
+  const sliceL   = `
+    M ${pL.x} ${pL.y}
+    L ${startPtL.x} ${startPtL.y}
+    ${arcL}
+    L ${pL.x} ${pL.y}
+  `;
+  angleLeftInt.setAttribute('d', sliceL.trim());
+  // LEFT interior slice ...
+angleLeftInt.setAttribute('d', sliceL.trim());
+placeAngleLabel(labelLeft, pL, rL, startL, endL, angleLeft);
+
+  // interior at TOP vertex (slice)
+  const rT  = 100;
+  const vTB = { x: pL.x - pB.x, y: pL.y - pB.y };
+  const vTC = { x: pC.x - pB.x, y: pC.y - pB.y };
+  let startT = Math.atan2(vTC.y, vTC.x);
+  let endT   = Math.atan2(vTB.y, vTB.x);
+
+  const arcT     = describeArc(pB, rT, startT, endT);
+  const startPtT = polarToCartesian(pB, rT, startT);
+  const endPtT   = polarToCartesian(pB, rT, endT);
+  const sliceT   = `
+    M ${pB.x} ${pB.y}
+    L ${startPtT.x} ${startPtT.y}
+    ${arcT}
+    L ${pB.x} ${pB.y}
+  `;
+  angleTopInt.setAttribute('d', sliceT.trim());
+// TOP interior slice ...
+angleTopInt.setAttribute('d', sliceT.trim());
+placeAngleLabel(labelTop, pB, rT, startT, endT, angleTop);
+// interior at RIGHT vertex (slice)
+const rR  = 100;
+const vRC = { x: pL.x - pC.x, y: pL.y - pC.y }; // base toward left
+const vRB = { x: pB.x - pC.x, y: pB.y - pC.y }; // slanted side
+let startR = Math.atan2(vRC.y, vRC.x);
+let endR   = Math.atan2(vRB.y, vRB.x);
+
+const arcR     = describeArc(pC, rR, startR, endR);
+const startPtR = polarToCartesian(pC, rR, startR);
+const endPtR   = polarToCartesian(pC, rR, endR);
+const sliceR   = `
+  M ${pC.x} ${pC.y}
+  L ${startPtR.x} ${startPtR.y}
+  ${arcR}
+  L ${pC.x} ${pC.y}
+`;
+angleRightInt.setAttribute('d', sliceR.trim());
+
+// label for RIGHT interior: bisect using reversed order
+const midR    = (endR + startR) / 2 + Math.PI;  // flip to opposite side
+const rLabelR = rR * 0.6;
+const labelPtR = polarToCartesian(pC, rLabelR, midR);
+labelRight.setAttribute('x', labelPtR.x);
+labelRight.setAttribute('y', labelPtR.y);
+labelRight.textContent = Math.round(angleRight * 180 / Math.PI) + '°';
+
+  // --- exterior at RIGHT vertex split into two slices ---
+
+  const extRadius = 100;
+
+  // first exterior slice: congruent to TOP interior
+  const ext1Angle = angleTop;   // radians
+  // second exterior slice: congruent to LEFT interior
+  const ext2Angle = angleLeft;  // radians
+
+  // start at top of right interior arc
+  const extStart1 = endR;
+  const extEnd1   = extStart1 + ext1Angle;
+
+  const extStart2 = extEnd1;
+  const extEnd2   = extStart2 + ext2Angle;
+
+  // slice 1 (top-congruent)
+  const arcExt1     = describeArc(pC, extRadius, extStart1, extEnd1);
+  const startPtExt1 = polarToCartesian(pC, extRadius, extStart1);
+  const endPtExt1   = polarToCartesian(pC, extRadius, extEnd1);
+  const sliceExt1   = `
+    M ${pC.x} ${pC.y}
+    L ${startPtExt1.x} ${startPtExt1.y}
+    ${arcExt1}
+    L ${pC.x} ${pC.y}
+  `;
+angleRightExtTop.setAttribute('d', sliceExt1.trim());
+placeAngleLabel(labelExtTop, pC, extRadius, extStart1, extEnd1, angleTop);
+  // slice 2 (left-congruent)
+  const arcExt2     = describeArc(pC, extRadius, extStart2, extEnd2);
+  const startPtExt2 = polarToCartesian(pC, extRadius, extStart2);
+  const endPtExt2   = polarToCartesian(pC, extRadius, extEnd2);
+  const sliceExt2   = `
+    M ${pC.x} ${pC.y}
+    L ${startPtExt2.x} ${startPtExt2.y}
+    ${arcExt2}
+    L ${pC.x} ${pC.y}
+  `;
+angleRightExtLeft.setAttribute('d', sliceExt2.trim());
+placeAngleLabel(labelExtLeft, pC, extRadius, extStart2, extEnd2, angleLeft);}
+
+// initial draw
+update();
+</script>
+
+</body>
+</html>
