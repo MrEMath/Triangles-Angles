@@ -208,11 +208,21 @@ B.addEventListener('pointerup', e => {
   draggingHandle = null;
   B.releasePointerCapture(e.pointerId);
 });
+// Top vertex: free drag, but not below the base ray
 B.addEventListener('pointermove', e => {
   if (draggingHandle !== B) return;
   const pos = getMousePos(e);
-  B.setAttribute('cx', pos.x);
-  B.setAttribute('cy', pos.y);
+
+  const maxY = leftBase.y - 5;   // just above the ray (y = 420)
+  const minY = 20;               // optional: keep it inside the SVG
+  const minX = 20;
+  const maxX = 880;
+
+  const clampedX = Math.min(Math.max(pos.x, minX), maxX);
+  const clampedY = Math.min(Math.max(pos.y, minY), maxY);
+
+  B.setAttribute('cx', clampedX);
+  B.setAttribute('cy', clampedY);
   update();
 });
 
@@ -225,10 +235,17 @@ C.addEventListener('pointerup', e => {
   draggingHandle = null;
   C.releasePointerCapture(e.pointerId);
 });
+// Right vertex: constrained to base line, and not past the left end
 C.addEventListener('pointermove', e => {
   if (draggingHandle !== C) return;
   const pos = getMousePos(e);
-  C.setAttribute('cx', pos.x);
+
+  const minX = leftBase.x + 20;  // don’t cross the left end of the ray
+  const maxX = 880;              // optional right bound
+
+  const clampedX = Math.min(Math.max(pos.x, minX), maxX);
+
+  C.setAttribute('cx', clampedX);
   C.setAttribute('cy', leftBase.y); // lock to base y
   update();
 });
