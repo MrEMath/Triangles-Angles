@@ -6,56 +6,39 @@
   <style>
     body { margin: 0; display: flex; justify-content: center; padding: 20px; }
     svg { border: 1px solid #ccc; touch-action: none; }
+
     .edge { stroke: #000; stroke-width: 6; fill: none; stroke-linecap: round; }
-    .ray { stroke: #000; stroke-width: 6; fill: none; marker-end: url(#arrow); }
+    .ray  { stroke: #000; stroke-width: 6; fill: none; marker-end: url(#arrow); }
     .handle { fill: red; cursor: pointer; }
     .fixed-point { fill: #004c7f; }
+
     .angle-label {
-  font-family: system-ui, sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-  fill: #333;
-  text-anchor: middle; /* center on x */
-  dominant-baseline: middle; /* center on y */
-  pointer-events: none;   /* ignore mouse events */
-  user-select: none;      /* prevent selection highlight */
+      font-family: system-ui, sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      fill: #333;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      pointer-events: none;
+      user-select: none;
     }
-    
-.angle-arc {
-  stroke-width: 6;
-  fill: none;
-}
 
-.angle-left {
-  stroke: #0077b6;   /* left interior: blue */
-}
+    .angle-arc { stroke-width: 6; fill: none; }
 
-.angle-top {
-  stroke: #00a676;   /* top interior: green */
-}
+    .angle-left        { stroke: #0077b6; }
+    .angle-top         { stroke: #00a676; }
+    .angle-right-int   { stroke: #ffb703; }
+    .angle-right-ext-top  { stroke: #00a676; }
+    .angle-right-ext-left { stroke: #0077b6; }
 
-.angle-right-int {
-  stroke: #ffb703;   /* right interior: yellow/orange */
-}
+    /* label colors to match slices */
+    .label-left           { fill: #0077b6; }
+    .label-top            { fill: #00a676; }
+    .label-right-int      { fill: #ffb703; }
+    .label-right-ext-top  { fill: #00a676; }
+    .label-right-ext-left { fill: #0077b6; }
 
-.angle-right-ext-top {
-  stroke: #00a676;   /* exterior slice congruent to top interior (same green) */
-}
-
-.angle-right-ext-left {
-  stroke: #0077b6;   /* exterior slice congruent to left interior (same blue) */
-}
-/* label colors to match slices */
-.label-left            { fill: #0077b6; }
-.label-top             { fill: #00a676; }
-.label-right-int       { fill: #ffb703; }
-.label-right-ext-top   { fill: #00a676; }
-.label-right-ext-left  { fill: #0077b6; }
-
-.equation-label {
-  font-size: 20px;
-}
-
+    .equation-label { font-size: 20px; }
   </style>
 </head>
 <body>
@@ -68,24 +51,58 @@
   </defs>
 
   <!-- Angle slices behind triangle -->
-<path id="angleLeftInterior"  class="angle-arc angle-left"></path>
-<path id="angleTopInterior"   class="angle-arc angle-top"></path>
-<path id="angleRightInterior" class="angle-arc angle-right-int"></path>
-<path id="angleRightExteriorTop"  class="angle-arc angle-right-ext-top"></path>
-<path id="angleRightExteriorLeft" class="angle-arc angle-right-ext-left"></path>
+  <path id="angleLeftInterior"   class="angle-arc angle-left"></path>
+  <path id="angleTopInterior"    class="angle-arc angle-top"></path>
+  <path id="angleRightInterior"  class="angle-arc angle-right-int"></path>
+  <path id="angleRightExteriorTop"   class="angle-arc angle-right-ext-top"></path>
+  <path id="angleRightExteriorLeft"  class="angle-arc angle-right-ext-left"></path>
 
-<text id="labelLeft"    class="angle-label label-left"></text>
-<text id="labelTop"     class="angle-label label-top"></text>
-<text id="labelRight"   class="angle-label label-right-int"></text>
-<text id="labelExtTop"  class="angle-label label-right-ext-top"></text>
-<text id="labelExtLeft" class="angle-label label-right-ext-left"></text>
-<text id="equationLabel" class="angle-label equation-label">
-  left-internal + top-internal = sum
+  <!-- Angle labels -->
+  <text id="labelLeft"    class="angle-label label-left"></text>
+  <text id="labelTop"     class="angle-label label-top"></text>
+  <text id="labelRight"   class="angle-label label-right-int"></text>
+  <text id="labelExtTop"  class="angle-label label-right-ext-top"></text>
+  <text id="labelExtLeft" class="angle-label label-right-ext-left"></text>
+
+  <!-- Equation along left side -->
+  <text id="equationLabel" class="angle-label equation-label">
+    <tspan id="eqSideLeft" class="label-left"></tspan>
+    <tspan> + </tspan>
+    <tspan id="eqSideTop" class="label-top"></tspan>
+    <tspan> = </tspan>
+    <tspan id="eqSideSum"></tspan>
+  </text>
+
+  <!-- Same equation above exterior slices -->
+<text id="equationLabelTop" class="angle-label equation-label">
+  <tspan id="eqTopTop"  class="label-top"></tspan>
+  <tspan> + </tspan>
+  <tspan id="eqTopLeft" class="label-left"></tspan>
+  <tspan> = </tspan>
+  <tspan id="eqTopSum"></tspan>
 </text>
-<text id="equationLabelTop" class="angle-label equation-label"></text>
-<text id="equationCenter" class="angle-label equation-label"></text>
-<text id="equationBottom" class="angle-label equation-label"></text>
 
+  <!-- Center equation: all three interior angles -->
+  <text id="equationCenter" class="angle-label equation-label">
+    <tspan id="eqCenterLeft"  class="label-left"></tspan>
+    <tspan> + </tspan>
+    <tspan id="eqCenterTop"   class="label-top"></tspan>
+    <tspan> + </tspan>
+    <tspan id="eqCenterRight" class="label-right-int"></tspan>
+    <tspan> = </tspan>
+    <tspan id="eqCenterSum"></tspan>
+  </text>
+
+  <!-- Bottom equation: right interior + two exterior congruent slices -->
+  <text id="equationBottom" class="angle-label equation-label">
+    <tspan id="eqBottomRight"   class="label-right-int"></tspan>
+    <tspan> + </tspan>
+    <tspan id="eqBottomExtTop"  class="label-right-ext-top"></tspan>
+    <tspan> + </tspan>
+    <tspan id="eqBottomExtLeft" class="label-right-ext-left"></tspan>
+    <tspan> = </tspan>
+    <tspan id="eqBottomSum"></tspan>
+  </text>
 
   <!-- Base ray (static) -->
   <line id="baseRay" class="edge" x1="100" y1="420" x2="800" y2="420" marker-end="url(#arrow)"></line>
@@ -100,39 +117,57 @@
 </svg>
 
 <script>
-const svg = document.getElementById('board');
-const tri = document.getElementById('triangle');
+const svg  = document.getElementById('board');
+const tri  = document.getElementById('triangle');
+const B    = document.getElementById('B'); // top
+const C    = document.getElementById('C'); // right on base
 
-const B = document.getElementById('B'); // top
-const C = document.getElementById('C'); // right on base
+const angleLeftInt      = document.getElementById('angleLeftInterior');
+const angleTopInt       = document.getElementById('angleTopInterior');
+const angleRightInt     = document.getElementById('angleRightInterior');
+const angleRightExtTop  = document.getElementById('angleRightExteriorTop');
+const angleRightExtLeft = document.getElementById('angleRightExteriorLeft');
 
-const angleLeftInt       = document.getElementById('angleLeftInterior');
-const angleTopInt        = document.getElementById('angleTopInterior');
-const angleRightInt      = document.getElementById('angleRightInterior');
-const angleRightExtTop   = document.getElementById('angleRightExteriorTop');
-const angleRightExtLeft  = document.getElementById('angleRightExteriorLeft');
-const labelLeft    = document.getElementById('labelLeft');
-const labelTop     = document.getElementById('labelTop');
-const labelRight   = document.getElementById('labelRight');
-const labelExtTop  = document.getElementById('labelExtTop');
-const labelExtLeft = document.getElementById('labelExtLeft');
-const equationLabel = document.getElementById('equationLabel');
-const equationLabelTop = document.getElementById('equationLabelTop');
-const equationCenter = document.getElementById('equationCenter');
-const equationBottom = document.getElementById('equationBottom');
+const labelLeft   = document.getElementById('labelLeft');
+const labelTop    = document.getElementById('labelTop');
+const labelRight  = document.getElementById('labelRight');
+const labelExtTop = document.getElementById('labelExtTop');
+const labelExtLeft= document.getElementById('labelExtLeft');
 
+const equationLabel     = document.getElementById('equationLabel');
+const equationLabelTop  = document.getElementById('equationLabelTop');
+const equationCenter    = document.getElementById('equationCenter');
+const equationBottom    = document.getElementById('equationBottom');
 
+// tspans for equations
+const eqSideLeft   = document.getElementById('eqSideLeft');
+const eqSideTop    = document.getElementById('eqSideTop');
+const eqSideSum    = document.getElementById('eqSideSum');
+
+const eqTopLeft    = document.getElementById('eqTopLeft');
+const eqTopTop     = document.getElementById('eqTopTop');
+const eqTopSum     = document.getElementById('eqTopSum');
+
+const eqCenterLeft  = document.getElementById('eqCenterLeft');
+const eqCenterTop   = document.getElementById('eqCenterTop');
+const eqCenterRight = document.getElementById('eqCenterRight');
+const eqCenterSum   = document.getElementById('eqCenterSum');
+
+const eqBottomRight   = document.getElementById('eqBottomRight');
+const eqBottomExtTop  = document.getElementById('eqBottomExtTop');
+const eqBottomExtLeft = document.getElementById('eqBottomExtLeft');
+const eqBottomSum     = document.getElementById('eqBottomSum');
 
 // Fixed left base vertex
 const leftBase = { x: 100, y: 420 };
 
 // --- Geometry helpers ---
 function angleBetween(p, q, r) {
-  const u = {x: p.x - q.x, y: p.y - q.y};
-  const v = {x: r.x - q.x, y: r.y - q.y};
+  const u = { x: p.x - q.x, y: p.y - q.y };
+  const v = { x: r.x - q.x, y: r.y - q.y };
   const dot = u.x * v.x + u.y * v.y;
-  const mu = Math.hypot(u.x, u.y);
-  const mv = Math.hypot(v.x, v.y);
+  const mu  = Math.hypot(u.x, u.y);
+  const mv  = Math.hypot(v.x, v.y);
   if (!mu || !mv) return 0;
   let cos = dot / (mu * mv);
   cos = Math.max(-1, Math.min(1, cos));
@@ -148,8 +183,8 @@ function polarToCartesian(center, radius, angleRad) {
 
 function describeArc(center, radius, startAngle, endAngle) {
   const start = polarToCartesian(center, radius, startAngle);
-  const end = polarToCartesian(center, radius, endAngle);
-  const largeArcFlag = endAngle - startAngle <= Math.PI ? "0" : "1";
+  const end   = polarToCartesian(center, radius, endAngle);
+  const largeArcFlag = endAngle - startAngle <= Math.PI ? '0' : '1';
   return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`;
 }
 
@@ -197,49 +232,44 @@ C.addEventListener('pointermove', e => {
   C.setAttribute('cy', leftBase.y); // lock to base y
   update();
 });
+
 function placeAngleLabel(labelEl, center, radius, startAngle, endAngle, angleRad) {
   const mid = (startAngle + endAngle) / 2;
-  const r   = radius * 0.6; // a bit inside the arc
+  const r   = radius * 0.6;
   const pt  = polarToCartesian(center, r, mid);
-  const degrees = Math.round(angleRad * 180 / Math.PI); // [web:108][web:110][web:116]
+  const degrees = Math.round(angleRad * 180 / Math.PI);
   labelEl.setAttribute('x', pt.x);
   labelEl.setAttribute('y', pt.y);
   labelEl.textContent = degrees + '°';
 }
 
 function update() {
-  const pL = leftBase; // left base
-  const pB = { x: +B.getAttribute('cx'), y: +B.getAttribute('cy') }; // top
-  const pC = { x: +C.getAttribute('cx'), y: +C.getAttribute('cy') }; // right
-  // --- equation label along left side, centered and outside triangle ---
+  const pL = leftBase;
+  const pB = { x: +B.getAttribute('cx'), y: +B.getAttribute('cy') };
+  const pC = { x: +C.getAttribute('cx'), y: +C.getAttribute('cy') };
 
-  // midpoint of left side
+  // --- equation label along left side, centered and outside triangle ---
   const midLeft = {
     x: (pL.x + pB.x) / 2,
     y: (pL.y + pB.y) / 2
   };
 
-  // vector from left base to top
   const vLB = { x: pB.x - pL.x, y: pB.y - pL.y };
-
-  // angle of the left side
   const theta = Math.atan2(vLB.y, vLB.x);
 
-// unit normal pointing *opposite* direction
-const n = { x: vLB.y, y: -vLB.x };   // flipped sign
-const lenN = Math.hypot(n.x, n.y) || 1;
-const normal = { x: n.x / lenN, y: n.y / lenN };
+  // unit normal pointing outward (flipped)
+  const n = { x: vLB.y, y: -vLB.x };
+  const lenN = Math.hypot(n.x, n.y) || 1;
+  const normal = { x: n.x / lenN, y: n.y / lenN };
 
-  const offset = 40; // how far outside the triangle
+  const offsetSide = 40;
   const eqPos = {
-    x: midLeft.x + normal.x * offset,
-    y: midLeft.y + normal.y * offset
+    x: midLeft.x + normal.x * offsetSide,
+    y: midLeft.y + normal.y * offsetSide
   };
 
   equationLabel.setAttribute('x', eqPos.x);
   equationLabel.setAttribute('y', eqPos.y);
-
-  // center the text and rotate it parallel to the side
   equationLabel.setAttribute(
     'transform',
     `rotate(${theta * 180 / Math.PI}, ${eqPos.x}, ${eqPos.y})`
@@ -253,18 +283,21 @@ const normal = { x: n.x / lenN, y: n.y / lenN };
   const angleTop   = angleBetween(pL, pB, pC);
   const angleRight = angleBetween(pL, pC, pB);
 
-  // convert to degrees once
-  const leftDeg  = Math.round(angleLeft  * 180 / Math.PI);
-  const topDeg   = Math.round(angleTop   * 180 / Math.PI);
-  const rightDeg = Math.round(angleRight * 180 / Math.PI);
+  // convert to degrees once; adjust right so sum is exactly 180
+  const leftDeg  = Math.round(angleLeft * 180 / Math.PI);
+  const topDeg   = Math.round(angleTop  * 180 / Math.PI);
+  const rightDeg = 180 - leftDeg - topDeg;
 
-  // side equation (left + top)
-  const sumDeg = leftDeg + topDeg;
-  equationLabel.textContent =
-    `${leftDeg}° + ${topDeg}° = ${sumDeg}°`;
+  // ----- side equation (left + top) -----
+  const sideSum = leftDeg + topDeg;
+  eqSideLeft.textContent = `${leftDeg}°`;
+  eqSideTop.textContent  = `${topDeg}°`;
+  eqSideSum.textContent  = `${sideSum}°`;
 
-  // same equation text above exterior slices
-  equationLabelTop.textContent = equationLabel.textContent;
+  // ----- same equation above exterior slices -----
+  eqTopTop.textContent  = `${topDeg}°`;
+  eqTopLeft.textContent = `${leftDeg}°`;
+  eqTopSum.textContent  = `${sideSum}°`;
 
   const offsetUp    = 120;
   const offsetRight = 70;
@@ -272,22 +305,13 @@ const normal = { x: n.x / lenN, y: n.y / lenN };
   equationLabelTop.setAttribute('y', pC.y - offsetUp);
   equationLabelTop.removeAttribute('transform');
 
-  // center equation: all three interior angles
+  // ----- center equation: all three interior angles -----
   const sumAllDeg = leftDeg + topDeg + rightDeg;
-  equationCenter.textContent =
-    `${leftDeg}° + ${topDeg}° + ${rightDeg}° = ${sumAllDeg}°`;
+  eqCenterLeft.textContent  = `${leftDeg}°`;
+  eqCenterTop.textContent   = `${topDeg}°`;
+  eqCenterRight.textContent = `${rightDeg}°`;
+  eqCenterSum.textContent   = `${sumAllDeg}°`;
 
-    // exterior slices are congruent to top and left interiors
-  const extTopDeg  = topDeg;   // exterior-top-congruent
-  const extLeftDeg = leftDeg;  // exterior-left-congruent
-
-  const sumBottom = rightDeg + extTopDeg + extLeftDeg;
-
-  equationBottom.textContent =
-    `${rightDeg}° + ${extTopDeg}° + ${extLeftDeg}° = ${sumBottom}°`;
-  
-
-  // centroid of triangle: average of vertices
   const centroid = {
     x: (pL.x + pB.x + pC.x) / 3,
     y: (pL.y + pB.y + pC.y) / 3
@@ -296,7 +320,23 @@ const normal = { x: n.x / lenN, y: n.y / lenN };
   equationCenter.setAttribute('y', centroid.y);
   equationCenter.removeAttribute('transform');
 
-  // interior at LEFT vertex (slice)
+  // ----- bottom equation: right interior + two exterior congruent slices -----
+  const extTopDeg   = topDeg;
+  const extLeftDeg  = leftDeg;
+  const extRightDeg = 180 - extTopDeg - extLeftDeg;
+  const sumBottom   = extRightDeg + extTopDeg + extLeftDeg;
+
+  eqBottomRight.textContent   = `${extRightDeg}°`;
+  eqBottomExtTop.textContent  = `${extTopDeg}°`;
+  eqBottomExtLeft.textContent = `${extLeftDeg}°`;
+  eqBottomSum.textContent     = `${sumBottom}°`;
+
+  const offsetDown = 40;
+  equationBottom.setAttribute('x', pC.x);
+  equationBottom.setAttribute('y', pC.y + offsetDown);
+  equationBottom.removeAttribute('transform');
+
+  // ----- interior at LEFT vertex (slice) -----
   const rL  = 100;
   const vLC = { x: pC.x - pL.x, y: pC.y - pL.y };
   let startL = Math.atan2(vLB.y, vLB.x);
@@ -312,15 +352,9 @@ const normal = { x: n.x / lenN, y: n.y / lenN };
     L ${pL.x} ${pL.y}
   `;
   angleLeftInt.setAttribute('d', sliceL.trim());
-  // LEFT interior slice ...
-angleLeftInt.setAttribute('d', sliceL.trim());
-placeAngleLabel(labelLeft, pL, rL, startL, endL, angleLeft);
-  const offsetDown = 40;  // distance below the ray
-  equationBottom.setAttribute('x', pC.x);
-  equationBottom.setAttribute('y', pC.y + offsetDown);
-  equationBottom.removeAttribute('transform');  // keep horizontal
+  placeAngleLabel(labelLeft, pL, rL, startL, endL, angleLeft);
 
-  // interior at TOP vertex (slice)
+  // ----- interior at TOP vertex (slice) -----
   const rT  = 100;
   const vTB = { x: pL.x - pB.x, y: pL.y - pB.y };
   const vTC = { x: pC.x - pB.x, y: pC.y - pB.y };
@@ -337,45 +371,38 @@ placeAngleLabel(labelLeft, pL, rL, startL, endL, angleLeft);
     L ${pB.x} ${pB.y}
   `;
   angleTopInt.setAttribute('d', sliceT.trim());
-// TOP interior slice ...
-angleTopInt.setAttribute('d', sliceT.trim());
-placeAngleLabel(labelTop, pB, rT, startT, endT, angleTop);
-// interior at RIGHT vertex (slice)
-const rR  = 100;
-const vRC = { x: pL.x - pC.x, y: pL.y - pC.y }; // base toward left
-const vRB = { x: pB.x - pC.x, y: pB.y - pC.y }; // slanted side
-let startR = Math.atan2(vRC.y, vRC.x);
-let endR   = Math.atan2(vRB.y, vRB.x);
+  placeAngleLabel(labelTop, pB, rT, startT, endT, angleTop);
 
-const arcR     = describeArc(pC, rR, startR, endR);
-const startPtR = polarToCartesian(pC, rR, startR);
-const endPtR   = polarToCartesian(pC, rR, endR);
-const sliceR   = `
-  M ${pC.x} ${pC.y}
-  L ${startPtR.x} ${startPtR.y}
-  ${arcR}
-  L ${pC.x} ${pC.y}
-`;
-angleRightInt.setAttribute('d', sliceR.trim());
+  // ----- interior at RIGHT vertex (slice) -----
+  const rR  = 100;
+  const vRC = { x: pL.x - pC.x, y: pL.y - pC.y };
+  const vRB = { x: pB.x - pC.x, y: pB.y - pC.y };
+  let startR = Math.atan2(vRC.y, vRC.x);
+  let endR   = Math.atan2(vRB.y, vRB.x);
 
-// label for RIGHT interior: bisect using reversed order
-const midR    = (endR + startR) / 2 + Math.PI;  // flip to opposite side
-const rLabelR = rR * 0.6;
-const labelPtR = polarToCartesian(pC, rLabelR, midR);
-labelRight.setAttribute('x', labelPtR.x);
-labelRight.setAttribute('y', labelPtR.y);
-labelRight.textContent = Math.round(angleRight * 180 / Math.PI) + '°';
+  const arcR     = describeArc(pC, rR, startR, endR);
+  const startPtR = polarToCartesian(pC, rR, startR);
+  const endPtR   = polarToCartesian(pC, rR, endR);
+  const sliceR   = `
+    M ${pC.x} ${pC.y}
+    L ${startPtR.x} ${startPtR.y}
+    ${arcR}
+    L ${pC.x} ${pC.y}
+  `;
+  angleRightInt.setAttribute('d', sliceR.trim());
 
-  // --- exterior at RIGHT vertex split into two slices ---
+  const midR    = (endR + startR) / 2 + Math.PI;
+  const rLabelR = rR * 0.6;
+  const labelPtR= polarToCartesian(pC, rLabelR, midR);
+  labelRight.setAttribute('x', labelPtR.x);
+  labelRight.setAttribute('y', labelPtR.y);
+  labelRight.textContent = `${rightDeg}°`;
 
+  // ----- exterior at RIGHT vertex split into two slices -----
   const extRadius = 100;
+  const ext1Angle = angleTop;
+  const ext2Angle = angleLeft;
 
-  // first exterior slice: congruent to TOP interior
-  const ext1Angle = angleTop;   // radians
-  // second exterior slice: congruent to LEFT interior
-  const ext2Angle = angleLeft;  // radians
-
-  // start at top of right interior arc
   const extStart1 = endR;
   const extEnd1   = extStart1 + ext1Angle;
 
@@ -392,8 +419,9 @@ labelRight.textContent = Math.round(angleRight * 180 / Math.PI) + '°';
     ${arcExt1}
     L ${pC.x} ${pC.y}
   `;
-angleRightExtTop.setAttribute('d', sliceExt1.trim());
-placeAngleLabel(labelExtTop, pC, extRadius, extStart1, extEnd1, angleTop);
+  angleRightExtTop.setAttribute('d', sliceExt1.trim());
+  placeAngleLabel(labelExtTop, pC, extRadius, extStart1, extEnd1, angleTop);
+
   // slice 2 (left-congruent)
   const arcExt2     = describeArc(pC, extRadius, extStart2, extEnd2);
   const startPtExt2 = polarToCartesian(pC, extRadius, extStart2);
@@ -404,8 +432,9 @@ placeAngleLabel(labelExtTop, pC, extRadius, extStart1, extEnd1, angleTop);
     ${arcExt2}
     L ${pC.x} ${pC.y}
   `;
-angleRightExtLeft.setAttribute('d', sliceExt2.trim());
-placeAngleLabel(labelExtLeft, pC, extRadius, extStart2, extEnd2, angleLeft);}
+  angleRightExtLeft.setAttribute('d', sliceExt2.trim());
+  placeAngleLabel(labelExtLeft, pC, extRadius, extStart2, extEnd2, angleLeft);
+}
 
 // initial draw
 update();
