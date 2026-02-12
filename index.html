@@ -51,6 +51,11 @@
 .label-right-int       { fill: #ffb703; }
 .label-right-ext-top   { fill: #00a676; }
 .label-right-ext-left  { fill: #0077b6; }
+
+.equation-label {
+  font-size: 20px;
+}
+
   </style>
 </head>
 <body>
@@ -74,6 +79,14 @@
 <text id="labelRight"   class="angle-label label-right-int"></text>
 <text id="labelExtTop"  class="angle-label label-right-ext-top"></text>
 <text id="labelExtLeft" class="angle-label label-right-ext-left"></text>
+<text id="equationLabel" class="angle-label equation-label">
+  left-internal + top-internal = sum
+</text>
+<text id="equationLabelTop" class="angle-label equation-label"></text>
+<text id="equationCenter" class="angle-label equation-label"></text>
+<text id="equationBottom" class="angle-label equation-label"></text>
+
+
   <!-- Base ray (static) -->
   <line id="baseRay" class="edge" x1="100" y1="420" x2="800" y2="420" marker-end="url(#arrow)"></line>
 
@@ -103,6 +116,11 @@ const labelTop     = document.getElementById('labelTop');
 const labelRight   = document.getElementById('labelRight');
 const labelExtTop  = document.getElementById('labelExtTop');
 const labelExtLeft = document.getElementById('labelExtLeft');
+const equationLabel = document.getElementById('equationLabel');
+const equationLabelTop = document.getElementById('equationLabelTop');
+const equationCenter = document.getElementById('equationCenter');
+const equationBottom = document.getElementById('equationBottom');
+
 
 
 // Fixed left base vertex
@@ -193,6 +211,39 @@ function update() {
   const pL = leftBase; // left base
   const pB = { x: +B.getAttribute('cx'), y: +B.getAttribute('cy') }; // top
   const pC = { x: +C.getAttribute('cx'), y: +C.getAttribute('cy') }; // right
+  // --- equation label along left side, centered and outside triangle ---
+
+  // midpoint of left side
+  const midLeft = {
+    x: (pL.x + pB.x) / 2,
+    y: (pL.y + pB.y) / 2
+  };
+
+  // vector from left base to top
+  const vLB = { x: pB.x - pL.x, y: pB.y - pL.y };
+
+  // angle of the left side
+  const theta = Math.atan2(vLB.y, vLB.x);
+
+// unit normal pointing *opposite* direction
+const n = { x: vLB.y, y: -vLB.x };   // flipped sign
+const lenN = Math.hypot(n.x, n.y) || 1;
+const normal = { x: n.x / lenN, y: n.y / lenN };
+
+  const offset = 40; // how far outside the triangle
+  const eqPos = {
+    x: midLeft.x + normal.x * offset,
+    y: midLeft.y + normal.y * offset
+  };
+
+  equationLabel.setAttribute('x', eqPos.x);
+  equationLabel.setAttribute('y', eqPos.y);
+
+  // center the text and rotate it parallel to the side
+  equationLabel.setAttribute(
+    'transform',
+    `rotate(${theta * 180 / Math.PI}, ${eqPos.x}, ${eqPos.y})`
+  );
 
   // triangle
   tri.setAttribute('points', `${pL.x},${pL.y} ${pB.x},${pB.y} ${pC.x},${pC.y}`);
@@ -202,9 +253,51 @@ function update() {
   const angleTop   = angleBetween(pL, pB, pC);
   const angleRight = angleBetween(pL, pC, pB);
 
+  // convert to degrees once
+  const leftDeg  = Math.round(angleLeft  * 180 / Math.PI);
+  const topDeg   = Math.round(angleTop   * 180 / Math.PI);
+  const rightDeg = Math.round(angleRight * 180 / Math.PI);
+
+  // side equation (left + top)
+  const sumDeg = leftDeg + topDeg;
+  equationLabel.textContent =
+    `${leftDeg}° + ${topDeg}° = ${sumDeg}°`;
+
+  // same equation text above exterior slices
+  equationLabelTop.textContent = equationLabel.textContent;
+
+  const offsetUp    = 120;
+  const offsetRight = 70;
+  equationLabelTop.setAttribute('x', pC.x + offsetRight);
+  equationLabelTop.setAttribute('y', pC.y - offsetUp);
+  equationLabelTop.removeAttribute('transform');
+
+  // center equation: all three interior angles
+  const sumAllDeg = leftDeg + topDeg + rightDeg;
+  equationCenter.textContent =
+    `${leftDeg}° + ${topDeg}° + ${rightDeg}° = ${sumAllDeg}°`;
+
+    // exterior slices are congruent to top and left interiors
+  const extTopDeg  = topDeg;   // exterior-top-congruent
+  const extLeftDeg = leftDeg;  // exterior-left-congruent
+
+  const sumBottom = rightDeg + extTopDeg + extLeftDeg;
+
+  equationBottom.textContent =
+    `${rightDeg}° + ${extTopDeg}° + ${extLeftDeg}° = ${sumBottom}°`;
+  
+
+  // centroid of triangle: average of vertices
+  const centroid = {
+    x: (pL.x + pB.x + pC.x) / 3,
+    y: (pL.y + pB.y + pC.y) / 3
+  };
+  equationCenter.setAttribute('x', centroid.x);
+  equationCenter.setAttribute('y', centroid.y);
+  equationCenter.removeAttribute('transform');
+
   // interior at LEFT vertex (slice)
   const rL  = 100;
-  const vLB = { x: pB.x - pL.x, y: pB.y - pL.y };
   const vLC = { x: pC.x - pL.x, y: pC.y - pL.y };
   let startL = Math.atan2(vLB.y, vLB.x);
   let endL   = Math.atan2(vLC.y, vLC.x);
@@ -222,6 +315,10 @@ function update() {
   // LEFT interior slice ...
 angleLeftInt.setAttribute('d', sliceL.trim());
 placeAngleLabel(labelLeft, pL, rL, startL, endL, angleLeft);
+  const offsetDown = 40;  // distance below the ray
+  equationBottom.setAttribute('x', pC.x);
+  equationBottom.setAttribute('y', pC.y + offsetDown);
+  equationBottom.removeAttribute('transform');  // keep horizontal
 
   // interior at TOP vertex (slice)
   const rT  = 100;
