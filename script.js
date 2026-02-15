@@ -151,10 +151,13 @@ function saveLocalAttempt(record) {
 // ==============================
 // instead of saveAttemptsToSupabase
 async function saveTriangleAttemptsToSupabase(records) {
-  if (typeof window.supabaseTriangleClient === "undefined") return;
+  if (typeof window.supabaseTriangleClient === "undefined") {
+    console.error("Triangle client is undefined");
+    return;
+  }
 
   const { error } = await window.supabaseTriangleClient
-    .from("triangle_attempts")      // NEW TABLE NAME
+    .from("triangle_attempts")
     .insert(
       records.map(r => ({
         teacher: r.teacher,
@@ -171,6 +174,8 @@ async function saveTriangleAttemptsToSupabase(records) {
 
   if (error) {
     console.error("Error inserting triangle attempts", error);
+  } else {
+    console.log("Inserted triangle attempts", records);
   }
 }
 
