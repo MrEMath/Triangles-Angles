@@ -1017,7 +1017,8 @@ async function saveCurrentQuestionToSupabase() {
     created_at: new Date().toISOString()
   };
 
-await saveAttemptsToSupabase([record]);}
+  await saveTriangleAttemptsToSupabase([record]);   // <--
+}
 // ==============================
 // PROGRESS / NAV UI HELPERS
 // ==============================
