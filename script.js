@@ -303,11 +303,230 @@ const questions = [
     { id: "a", correct: "a" },   // first blank accepts "a"
     { id: "b", correct: "b" }    // second blank accepts "b"
   ]
-}
- 
+},
+{ id: 12, sbg: 1.5, 
+    text: "What is the measure of ∠g?", 
+    image: "practice-images/12.png", 
+    choices: [ "125°", "45°", "95°", "140°" ], 
+    correct: "a", 
+    hint: "Consider the relationship between remote-interior angles and exterior angles of triangles." 
+  }, 
+{
+    id: 13, sbg: 1.5,
+    text: "What is the measure of ∠c? ",
+    image: "practice-images/13.png",
+    type: "fill",
+    blanks: [
+      { id: "c", label: "∠c =", correct: "35", labelAfter: "°"},
+      
+    ],
+    hint: "Use Triangle Sum Theorem or your understanding of adjacent angles."
+  },
+{
+    id: 14, sbg: 1.5,
+    text: "If the measure of an external angle of a triangle is 67°, what is the sum of the remote interior angles? ",
+    image: "",
+    type: "fill",
+    blanks: [
+      { id: "c", label: "", correct: "67", labelAfter: "°"},
+      
+    ],
+    hint: "Use Triangle Sum Theorem."
+  },
+{
+    id: 15, sbg: 1.5,
+    text: "What is the measure of ∠b? ",
+    image: "practice-images/15.png",
+    type: "fill",
+    blanks: [
+      { id: "b", label: "b=", correct: "30", labelAfter: "°"},
+      
+    ],
+    hint: "Use Triangle Sum Theorem."
+  },
+{
+  id: 16,
+  sbg: 2.0,
+  type: "fillSentence",
+  textParts: [
+    "Complete the equation: ",
+    "",        // first blank
+    " - ",
+    "",        // second blank
+    " = b"
+  ],
+  image: "practice-images/16.png",
+  blanks: [
+    { id: "d", correct: "d" },   
+    { id: "a", correct: "a" }   
+  ],
+  hint: "Apply inverse operations to sum of remote interior property of exterior angles."
+},
+{
+  id: 17,
+  sbg: 2.0,
+  type: "fillSentence",
+  textParts: [
+    "Complete the equation: ",
+    "",        // first blank
+    " - ",
+    "",        // second blank
+    " = a"
+  ],
+  image: "practice-images/17.png",
+  blanks: [
+    { id: "a", correct: "148" },   
+    { id: "b", correct: "42" }   
+  ],
+  hint: "Apply inverse operations to sum of remote interior property of exterior angles."
+},
+{
+  id: 18,
+  sbg: 2.0,
+  type: "fillSentence",
+  textParts: [
+    "Complete the equation: ",
+    "",        // first blank
+    " - ",
+    "",        // second blank
+    " = b"
+  ],
+  image: "practice-images/18.png",
+  blanks: [
+    { id: "a", correct: "135" },   
+    { id: "b", correct: "57" }   
+  ],
+  hint: "Apply inverse operations to sum of remote interior property of exterior angles."
+},
+{
+  id: 19,
+  sbg: 2.0,
+  type: "fillSentence",
+  textParts: [
+    "Complete the equation: ",
+    "",        // first blank
+    " - ",
+    "",        // second blank
+    " = x"
+  ],
+  image: "practice-images/19.png",
+  blanks: [
+    { id: "a", correct: "150" },   
+    { id: "b", correct: "120" }   
+  ],
+  hint: "Apply inverse operations to sum of remote interior property of exterior angles."
+},
+{
+  id: 20,
+  sbg: 2.0,
+  type: "fillSentence",
+  textParts: [
+    "Complete the equation: ",
+    "",        // first blank
+    " - ",
+    "",        // second blank
+    " = z"
+  ],
+  image: "practice-images/20.png",
+  blanks: [
+    { id: "a", correct: "156" },   
+    { id: "b", correct: "26" }   
+  ],
+  hint: "Apply inverse operations to sum of remote interior property of exterior angles."
+},
+{
+    id: 21, sbg: 2.5,
+    text: "Consider the figure where transversals c and d intersect parallel lines a and b. What is the measure of ∠x?",
+    image: "practice-images/21.png",
+    type: "fill",
+    blanks: [
+      { id: "x", label: "∠x =", correct: "55", labelAfter: "°"},
+    ],
+    hint: "Use vertical angle relationships and the sum of interior angles."
+  },
+{
+    id: 22, sbg: 2.5,
+    text: "Consider the figure of a triangle with its exterior angle. What is the measure of ∠bcd?",
+    image: "practice-images/22.png",
+    type: "fill",
+    blanks: [
+      { id: "bcd", label: "∠bcd =", correct: "28", labelAfter: "°"},
+    ],
+    hint: "Use sum of remote interior angles and exterior angles principle."
+  },
+{
+    id: 23, sbg: 2.5,
+    text: "Line a ║ Line b and both are intersected by transversals c and d. If m∠y = 60° and m∠n = 133°, what is the measure of ∠x?",
+    image: "practice-images/23.png",
+    type: "fill",
+    blanks: [
+      { id: "x", label: "∠x =", correct: "73", labelAfter: "°"},
+    ],
+    hint: "Use sum of remote interior angles and exterior angles principle."
+  },
+{
+    id: 24, sbg: 2.5,
+    text: "Consider the figure where transversals c and d intersect parallel lines a and b. What is the measure of ∠x?",
+    image: "practice-images/24.png",
+    type: "fill",
+    blanks: [
+      { id: "x", label: "∠x =", correct: "78", labelAfter: "°"},
+    ],
+    hint: "Use sum of remote interior angles and exterior angles principle."
+  },
+{
+    id: 25, sbg: 2.5,
+    text: "Line a ║ Line b and both are intersected by transversals c and d. If m∠y = 71° and m∠l = 111°, what is the measure of ∠p?",
+    image: "practice-images/25.png",
+    type: "fill",
+    blanks: [
+      { id: "p", label: "∠p =", correct: "140", labelAfter: "°"},
+    ],
+    hint: "Use sum of remote interior angles and exterior angles principle."
+  },
+{
+    id: 26, sbg: 2.5,
+    text: "What is the value of x?",
+    image: "practice-images/26.png",
+    type: "fill",
+    blanks: [
+      { id: "x", label: "x =", correct: "43"},
+    ],
+    hint: "Use sum of remote interior angles and exterior angles principle."
+  },
+{
+    id: 27, sbg: 2.5,
+    text: "What is the value of x?",
+    image: "practice-images/27.png",
+    type: "fill",
+    blanks: [
+      { id: "x", label: "x =", correct: "70"},
+    ],
+    hint: "Use sum of remote interior angles and exterior angles principle."
+  },
+{
+    id: 28, sbg: 2.5,
+    text: "What is the value of x?",
+    image: "practice-images/28.png",
+    type: "fill",
+    blanks: [
+      { id: "x", label: "x =", correct: "50"},
+    ],
+    hint: "Use sum of remote interior angles and exterior angles principle."
+  },
+{
+    id: 29, sbg: 2.5,
+    text: "What is the value of x?",
+    image: "practice-images/29.png",
+    type: "fill",
+    blanks: [
+      { id: "x", label: "x =", correct: "60"},
+    ],
+    hint: "Use sum of remote interior angles and exterior angles principle."
+  },
+
 ];
 
-// ==============================
 // IN-MEMORY STATE
 // ==============================
 const studentAnswers = new Array(questions.length).fill(null);
@@ -911,13 +1130,23 @@ function evaluateAnswerAt(index) {
     if (ans && typeof ans === "object") {
       isCorrect = q.statements.every(stmt => ans[stmt.id] === stmt.correct);
     }
-  } else if (q.type === "fill" || q.type === "fillSentence") {
-    if (ans && typeof ans === "object") {
+} else if (q.type === "fill" || q.type === "fillSentence") {
+  if (ans && typeof ans === "object") {
+    if (q.id === 11) {
+      // special case: either a+b or b+a is ok
+      const first = (ans["a"] || "").trim();
+      const second = (ans["b"] || "").trim();
+      isCorrect =
+        (first === "a" && second === "b") ||
+        (first === "b" && second === "a");
+    } else {
+      // default exact‑match behavior
       isCorrect = q.blanks.every(blank => {
         const given = (ans[blank.id] || "").trim();
         return given === blank.correct;
       });
     }
+  }
   } else if (q.type === "multi") {
     if (ans && typeof ans === "object") {
       isCorrect = q.options.every(opt => {
