@@ -131,7 +131,7 @@ let allStudentData = [];
 let isDataReady = false;
 
 function loadLocalData() {
-  const raw = localStorage.getItem("reflectionPracticeResults");
+  const raw = localStorage.getItem("trianglePracticeResults");
   allStudentData = raw ? JSON.parse(raw) : [];
   isDataReady = true;
 }
@@ -140,37 +140,38 @@ function createAttemptId() {
 }
 
 function saveLocalAttempt(record) {
-  const raw = localStorage.getItem("reflectionPracticeResults");
+  const raw = localStorage.getItem("trianglePracticeResults");
   const all = raw ? JSON.parse(raw) : [];
   all.push(record);
-  localStorage.setItem("reflectionPracticeResults", JSON.stringify(all));
+  localStorage.setItem("trianglePracticeResults", JSON.stringify(all));
 }
 
 // ==============================
 // SUPABASE SAVE HELPER
 // ==============================
-async function saveAttemptsToSupabase(records) {
-  if (typeof window.supabaseClient === "undefined") return;
+// instead of saveAttemptsToSupabase
+async function saveTriangleAttemptsToSupabase(records) {
+  if (typeof window.supabaseTriangleClient === "undefined") return;
 
-const { error } = await window.supabaseClient
-  .from("attempts")
-  .insert(
-    records.map(r => ({
-      teacher: r.teacher,
-      student_name: r.studentName,
-      question_id: r.questionId,
-      sbg: r.sbg,
-      answer: r.answer,
-      attempts: r.attempts,
-      correct: r.correct,
-      attempt_id: r.attempt_id,
-      created_at: r.created_at   // <-- use created_at, not timestamp
-    })),
-  );
+  const { error } = await window.supabaseTriangleClient
+    .from("triangle_attempts")      // NEW TABLE NAME
+    .insert(
+      records.map(r => ({
+        teacher: r.teacher,
+        student_name: r.studentName,
+        question_id: r.questionId,
+        sbg: r.sbg,
+        answer: r.answer,
+        attempts: r.attempts,
+        correct: r.correct,
+        attempt_id: r.attempt_id,
+        created_at: r.created_at
+      }))
+    );
 
-if (error) {
-  console.error("Error insesrting attempts into Supabase", error);
-}
+  if (error) {
+    console.error("Error inserting triangle attempts", error);
+  }
 }
 
 // ==============================
@@ -591,15 +592,14 @@ imageOverlay.addEventListener("click", hideImageOverlay);
 // ==============================
 // RESTORE PROGRESS FROM SUPABASE
 // ==============================
-async function restoreStudentProgressFromSupabase(teacher, student) {
-  if (typeof window.supabaseClient === "undefined") return;
+async function restoreTriangleProgressFromSupabase(teacher, student) {
+  if (typeof window.supabaseTriangleClient === "undefined") return;
 
-  const { data, error } = await window.supabaseClient
-    .from("attempts")
+  const { data, error } = await window.supabaseTriangleClient
+    .from("triangle_attempts")      // NEW TABLE
     .select("*")
     .eq("teacher", teacher)
     .eq("student_name", student);
-
   if (error) {
     console.error("Error loading attempts from Supabase", error);
     return;
@@ -659,7 +659,7 @@ loginButton.addEventListener("click", async () => {
 
   loginError.textContent = "";
   const currentStudent = { teacher, student };
-  localStorage.setItem("reflectionCurrentStudent", JSON.stringify(currentStudent));
+  localStorage.setItem("triangleCurrentStudent", JSON.stringify(currentStudent));
 
   loginScreen.style.display = "none";
   practiceScreen.style.display = "block";
@@ -667,7 +667,7 @@ loginButton.addEventListener("click", async () => {
   initNavigator();
 
   // NEW: pull saved attempts for this student from Supabase
-  await restoreStudentProgressFromSupabase(teacher, student);
+await restoreTriangleProgressFromSupabase(teacher, student);
 
   renderQuestion();
   updateProgress();
@@ -708,7 +708,7 @@ teacherSelectEl.addEventListener("change", () => {
 });
 
 function restoreLoginIfPresent() {
-  const raw = localStorage.getItem("reflectionCurrentStudent");
+  const raw = localStorage.getItem("triangleCurrentStudent");
   if (!raw) return;
   try {
     const currentStudent = JSON.parse(raw);
@@ -999,7 +999,7 @@ function saveCurrentAnswer() {
 }
 
 async function saveCurrentQuestionToSupabase() {
-  const rawStudent = localStorage.getItem("reflectionCurrentStudent");
+  const rawStudent = localStorage.getItem("triangleCurrentStudent");
   if (!rawStudent) return;
 
   const { teacher, student } = JSON.parse(rawStudent);
@@ -1017,8 +1017,7 @@ async function saveCurrentQuestionToSupabase() {
     created_at: new Date().toISOString()
   };
 
-  await saveAttemptsToSupabase([record]);
-}
+await saveAttemptsToSupabase([record]);}
 // ==============================
 // PROGRESS / NAV UI HELPERS
 // ==============================
@@ -1051,7 +1050,7 @@ function updateButtons() {
 // SUBMIT PRACTICE (FINAL ATTEMPT)
 // ==============================
 function finishPractice() {
-  const rawStudent = localStorage.getItem("reflectionCurrentStudent");
+  const rawStudent = localStorage.getItem("triangleCurrentStudent");
   const currentStudent = rawStudent ? JSON.parse(rawStudent) : null;
   if (!currentStudent) return;
 
@@ -1080,8 +1079,7 @@ function finishPractice() {
 
   // local and Supabase save
   records.forEach(saveLocalAttempt);
-  saveAttemptsToSupabase(records);
-
+saveTriangleAttemptsToSupabase(records);
   // 4) Summary screen
   const total = questions.length;
   const correctCount = questionStates.filter(s => s.correct === true).length;
@@ -1232,7 +1230,7 @@ const saveProgressBtn = document.getElementById("save-progress");
 
 if (saveProgressBtn) {
   saveProgressBtn.addEventListener("click", async () => {
-    const rawStudent = localStorage.getItem("reflectionCurrentStudent");
+    const rawStudent = localStorage.getItem("triangleCurrentStudent");
     const currentStudent = rawStudent ? JSON.parse(rawStudent) : null;
     if (!currentStudent) return;
 
