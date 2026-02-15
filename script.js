@@ -1248,7 +1248,7 @@ const records = questions.map((q, index) => ({
   created_at: new Date().toISOString()
 }));
 
-    await saveAttemptsToSupabase(records);
+saveTriangleAttemptsToSupabase(records);      
     feedback.textContent = "Progress saved.";
     feedback.className = "hint";
   });
