@@ -485,7 +485,7 @@ const questions = [
     hint: "Use sum of remote interior angles and exterior angles principle."
   },
 {
-    id: 26, sbg: 2.5,
+    id: 26, sbg: 3.0,
     text: "What is the value of x?",
     image: "practice-images/26.png",
     type: "fill",
@@ -495,7 +495,7 @@ const questions = [
     hint: "Use sum of remote interior angles and exterior angles principle."
   },
 {
-    id: 27, sbg: 2.5,
+    id: 27, sbg: 3.0,
     text: "What is the value of x?",
     image: "practice-images/27.png",
     type: "fill",
@@ -505,7 +505,7 @@ const questions = [
     hint: "Use sum of remote interior angles and exterior angles principle."
   },
 {
-    id: 28, sbg: 2.5,
+    id: 28, sbg: 3.0,
     text: "What is the value of x?",
     image: "practice-images/28.png",
     type: "fill",
@@ -515,7 +515,7 @@ const questions = [
     hint: "Use sum of remote interior angles and exterior angles principle."
   },
 {
-    id: 29, sbg: 2.5,
+    id: 29, sbg: 3.0,
     text: "What is the value of x?",
     image: "practice-images/29.png",
     type: "fill",
@@ -524,6 +524,16 @@ const questions = [
     ],
     hint: "Use sum of remote interior angles and exterior angles principle."
   },
+{
+    id: 30, sbg: 3.0,
+    text: "What is the value of x?",
+    image: "practice-images/30.png",
+    type: "fill",
+    blanks: [
+      { id: "x", label: "x =", correct: "52"},
+    ],
+    hint: "Use sum of remote interior angles and exterior angles principle."
+  }
 
 ];
 
