@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Videos - Interior & Exterior Angles of a Triangle</title>
+  <style>
+    :root {
+      --red: #C51D34;
+      --charcoal: #2E2E30;
+      --gray: #808080;
+      --offwhite: #F5F5F5;
+    }
+
+    body {
+      margin:0;
+      font-family:Arial, sans-serif;
+      background:var(--offwhite);
+      color:var(--charcoal);
+    }
+
+    header {
+      background:var(--charcoal);
+      color:var(--offwhite);
+      padding:10px 20px;
+      text-align:center;
+    }
+
+    main {
+      padding:20px;
+      display:flex;
+      justify-content:center;
+    }
+
+    .content {
+      background:white;
+      max-width:800px;
+      width:100%;
+      border-radius:8px;
+      padding:18px;
+      box-shadow:0 0 6px rgba(0,0,0,0.12);
+    }
+
+    h2 { color:var(--red); margin-top:0; }
+
+    .video-list {
+      display:grid;
+      gap:10px;
+      margin-top:12px;
+    }
+
+    .video-thumb {
+      display:block;
+      width:50%;
+      max-width:440px;
+      text-align:center;
+      margin:0 auto;
+    }
+
+    .video-title {
+      color:var(--red);
+      margin:6px 0 8px;
+      text-align:center;
+      font-size:1.3rem;
+      font-weight:700;
+    }
+
+    .back {
+      margin-top:16px;
+      text-align:center;
+    }
+
+    .back a {
+      display:inline-block;
+      padding:10px 16px;
+      background:var(--red);
+      color:white;
+      border-radius:4px;
+      text-decoration:none;
+    }
+
+    .back a:hover { background:#A01829; }
+
+    /* Modal */
+    #videoModal { position: fixed; inset: 0; z-index: 1200; display: none; }
+    #videoModal.show { display: block; }
+    .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.7); }
+    .modal-content { position: absolute; left:50%; top:50%; transform: translate(-50%,-50%); width: 90%; max-width: 960px; background: transparent; }
+    .modal-content #closeModal { position: absolute; right: -8px; top: -28px; background: transparent; border: none; color: white; font-size: 22px; cursor: pointer; }
+    .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; }
+    .video-wrapper iframe { position: absolute; left:0; top:0; width:100%; height:100%; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Videos — Interior & Exterior Angle Relationships</h1>
+  </header>
+
+  <main>
+    <div class="content">
+      <div class="video-list">
+        <div style="display:flex;gap:10px;align-items:center;flex-direction:column;">
+          <h3 class="video-title">Sum of Interior Angles of a Triangle</h3>
+          <a href="#"
+             class="video-thumb"
+             data-video="https://youtu.be/WJ9QkomWeU0?si=0kimL8F2XG2gqDsq"
+             id="secondVideo">
+            <img
+              src="https://img.youtube.com/vi/WJ9QkomWeU0/hqdefault.jpg"
+              alt="Sum of Interior Angles of a Triangle thumbnail"
+              style="width:100%; border-radius:6px; display:block;"
+            >
+          </a>
+
+          <h3 class="video-title">Exterior & Remote Interior Angles</h3>
+          <a href="#"
+             class="video-thumb"
+             data-video="https://youtu.be/h1QSoNVcZyw?si=cMxFXyFAftwtQJ8Q"
+             id="firstVideo">
+            <img
+              src="https://img.youtube.com/vi/h1QSoNVcZyw/hqdefault.jpg"
+              alt="Exterior & Remote Interior Angles thumbnail"
+              style="width:100%; border-radius:6px; display:block;"
+            >
+          </a>
+        </div>
+      </div>
+
+      <div class="back">
+        <a href="index.html">Back to Manipulative</a>
+      </div>
+    </div>
+  </main>
+
+  <div id="videoModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <button id="closeModal" aria-label="Close video">✕</button>
+      <div class="video-wrapper">
+        <iframe id="videoIframe" src="" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const modal = document.getElementById('videoModal');
+      const iframe = document.getElementById('videoIframe');
+      const closeBtn = document.getElementById('closeModal');
+
+      function openVideo(url) {
+        iframe.src = url + (url.indexOf('?')===-1 ? '?autoplay=1&rel=0' : '&autoplay=1&rel=0');
+        modal.classList.add('show');
+      }
+
+      function closeVideo(){
+        modal.classList.remove('show');
+        iframe.src = '';
+      }
+
+      document.querySelectorAll('.video-thumb').forEach(a => {
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          const v = a.getAttribute('data-video');
+          if (v) openVideo(v);
+        });
+      });
+
+      closeBtn.addEventListener('click', closeVideo);
+      modal.querySelector('.modal-overlay').addEventListener('click', closeVideo);
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') closeVideo(); });
+    })();
+  </script>
+</body>
+</html>
