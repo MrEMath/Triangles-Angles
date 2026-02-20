@@ -32,12 +32,11 @@ async function resetStudentData(teacher, studentName) {
     return;
   }
 
-  await loadData();
-  // caller will re-render dashboard with currentTeacher context
+  await loadData(currentTeacher);
 }
 
-// ---------------- DELETE ONE ATTEMPT (BUCKET) ----------------
-async function deleteAttempt(teacher, studentName, attemptIdMs) {
+// ---------------- DELETE ONE ATTEMPT (SESSION) ----------------
+async function deleteAttempt(teacher, studentName, attemptKey) {
   if (typeof window.supabaseTriangleClient === "undefined") return;
 
   const confirmDelete = window.confirm(
@@ -45,16 +44,26 @@ async function deleteAttempt(teacher, studentName, attemptIdMs) {
   );
   if (!confirmDelete) return;
 
-  const { error } = await window.supabaseTriangleClient
+  // attemptKey is the same value we used when grouping:
+  // either attempt_id, or a minute-bucket timestamp string.
+  const isTimestampKey = /^\d+$/.test(attemptKey); // crude check
+
+  let query = window.supabaseTriangleClient
     .from("triangle_attempts")
     .delete()
     .eq("teacher", teacher)
-    .eq("student_name", studentName)
-    .gte("created_at", new Date(Number(attemptIdMs)).toISOString())
-    .lt(
-      "created_at",
-      new Date(Number(attemptIdMs) + 60 * 1000).toISOString()
-    );
+    .eq("student_name", studentName);
+
+  if (isTimestampKey) {
+    const base = Number(attemptKey);
+    query = query
+      .gte("created_at", new Date(base).toISOString())
+      .lt("created_at", new Date(base + 60 * 1000).toISOString());
+  } else {
+    query = query.eq("attempt_id", attemptKey);
+  }
+
+  const { error } = await query;
 
   if (error) {
     console.error("Error deleting attempt", error);
@@ -62,7 +71,7 @@ async function deleteAttempt(teacher, studentName, attemptIdMs) {
     return;
   }
 
-  await loadData();
+  await loadData(currentTeacher);
   renderDashboard(
     document.getElementById("overall-stats"),
     document.querySelector("#item-analysis-table tbody"),
@@ -79,24 +88,47 @@ async function deleteAttempt(teacher, studentName, attemptIdMs) {
   }
 }
 
-// ---------------- DATA LOAD FROM SUPABASE ----------------
-async function loadData() {
+// ---------------- DATA LOAD FROM SUPABASE (PAGED) ----------------
+async function loadData(teacherName = null) {
   if (typeof window.supabaseTriangleClient === "undefined") {
     allRecords = [];
     return;
   }
 
-  const { data, error } = await window.supabaseTriangleClient
-    .from("triangle_attempts")
-    .select("*");
-    
-  if (error) {
-    console.error("Error loading attempts from Supabase", error);
-    allRecords = [];
-    return;
+  const pageSize = 1000;
+  let offset = 0;
+  let allRows = [];
+
+  while (true) {
+    let query = window.supabaseTriangleClient
+      .from("triangle_attempts")
+      .select("*")
+      .order("created_at", { ascending: true })
+      .range(offset, offset + pageSize - 1);
+
+    if (teacherName) {
+      query = query.eq("teacher", teacherName);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error loading attempts from Supabase", error);
+      allRecords = [];
+      return;
+    }
+
+    if (!data || data.length === 0) break;
+
+    allRows = allRows.concat(data);
+
+    if (data.length < pageSize) break;
+    offset += pageSize;
   }
 
-  allRecords = (data || []).map((row) => ({
+  console.log("triangle data length", allRows.length);
+
+  allRecords = allRows.map((row) => ({
     teacher: row.teacher,
     studentName: row.student_name,
     questionId: row.question_id,
@@ -104,7 +136,8 @@ async function loadData() {
     answer: row.answer,
     attempts: row.attempts,
     correct: row.correct,
-    timestamp: row.created_at
+    timestamp: row.created_at,
+    attempt_id: row.attempt_id || null
   }));
 }
 
@@ -116,7 +149,7 @@ function getAttemptKey(ts) {
 }
 
 // ---------------- DOM READY ----------------
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", () => {
   const teacherNameEl = document.getElementById("teacher-name");
   const teacherPasswordEl = document.getElementById("teacher-password");
   const teacherLoginBtn = document.getElementById("teacher-login-btn");
@@ -134,8 +167,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const resetBtn = document.getElementById("reset-student-btn");
   const refreshBtn = document.getElementById("refresh-data-btn");
   const deleteAttemptBtn = document.getElementById("delete-attempt-btn");
-
-  await loadData();
 
   let currentStudentItems = [];
   let currentItemIndex = 0;
@@ -155,7 +186,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         studentSelect,
         studentSummaryEl
       );
-      // clear student-specific UI
       studentSummaryEl.innerHTML = "";
       attemptSelect.innerHTML = `<option value="">Select an attempt</option>`;
       const strip = document.getElementById("student-item-strip");
@@ -168,7 +198,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // REFRESH BUTTON
   if (refreshBtn) {
     refreshBtn.addEventListener("click", async () => {
-      await loadData();
+      await loadData(currentTeacher);
       if (currentTeacher) {
         renderDashboard(
           overallStatsEl,
@@ -200,7 +230,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // TEACHER LOGIN
-  teacherLoginBtn.addEventListener("click", () => {
+  teacherLoginBtn.addEventListener("click", async () => {
     const name = teacherNameEl.value;
     const pwd = teacherPasswordEl.value.trim();
 
@@ -216,6 +246,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     teacherLoginError.textContent = "";
     currentTeacher = name;
+
+    await loadData(currentTeacher);
+
     loginSection.style.display = "none";
     dashboardSection.style.display = "block";
 
@@ -412,8 +445,13 @@ function renderDashboard(
   const studentNames = [
     ...new Set(teacherRecords.map((r) => r.studentName))
   ];
+
   const attemptIds = [
-    ...new Set(teacherRecords.map((r) => getAttemptKey(r.timestamp)))
+    ...new Set(
+      teacherRecords.map(
+        (r) => r.attempt_id || getAttemptKey(r.timestamp)
+      )
+    )
   ];
 
   const correctCount = teacherRecords.filter((r) => r.correct).length;
@@ -492,294 +530,6 @@ function renderDashboard(
   if (strip) strip.innerHTML = "";
 }
 
-// ---------------- SBG DOUGHNUT ----------------
-let sbgDoughnutChart = null;
-
-function renderSbgDoughnut(bands) {
-  const ctx = document.getElementById("sbg-doughnut");
-  if (!ctx) return;
-
-  const labels = [
-    "SBG 0.0–0.5",
-    "SBG 1.0–1.5",
-    "SBG 2.0–2.5",
-    "SBG 3.0"
-  ];
-  const data = [
-    bands["0.0-0.5"],
-    bands["1.0-1.5"],
-    bands["2.0-2.5"],
-    bands["3.0"]
-  ];
-  const colors = ["#F04923", "#FFBF00", "#00A86B", "#0067A5"];
-
-  if (sbgDoughnutChart) {
-    sbgDoughnutChart.data.datasets[0].data = data;
-    sbgDoughnutChart.update();
-    return;
-  }
-
-  sbgDoughnutChart = new Chart(ctx, {
-    type: "doughnut",
-    data: {
-      labels,
-      datasets: [
-        {
-          data,
-          backgroundColor: colors,
-          borderColor: "#ffffff",
-          borderWidth: 2
-        }
-      ]
-    },
-    options: {
-      plugins: {
-        legend: {
-          position: "bottom",
-          align: "center",
-          labels: {
-            usePointStyle: true,
-            boxWidth: 12,
-            boxHeight: 12,
-            padding: 16
-          }
-        },
-        datalabels: {
-          color: "#ffffff",
-          font: {
-            weight: "bold"
-          },
-          formatter(value, context) {
-            const dataset = context.dataset.data;
-            const sum = dataset.reduce((a, b) => a + b, 0) || 1;
-            const pct = (value / sum) * 100;
-            return value ? `${pct.toFixed(0)}%` : "";
-          }
-        }
-      },
-      cutout: "60%"
-    }
-  });
-}
-
-// ---------------- CLASS ITEM BAR CHART ----------------
-let itemBarChart = null;
-
-function renderItemBarChart(records) {
-  const ctx = document.getElementById("item-bar-chart");
-  if (!ctx) return;
-
-  if (!records || !records.length) {
-    ctx.parentElement.innerHTML = "<p>No item data yet.</p>";
-    return;
-  }
-
-  const byQuestion = {};
-  records.forEach((r) => {
-    const qid = r.questionId;
-    if (!byQuestion[qid]) byQuestion[qid] = [];
-    byQuestion[qid].push(r);
-  });
-
-  const labels = [];
-  const percents = [];
-  const sbgLabels = [];
-
-  Object.keys(byQuestion)
-    .sort((a, b) => Number(a) - Number(b))
-    .forEach((qid) => {
-      const group = byQuestion[qid];
-      const correct = group.filter((r) => r.correct).length;
-      const total = group.length || 1;
-      const percent = Math.round((correct / total) * 100);
-      labels.push(`Q${qid}`);
-      percents.push(percent);
-      sbgLabels.push(group[0].sbg);
-    });
-
-  const bgColors = sbgLabels.map((level) => {
-    if (level <= 0.5) return "#F04923";
-    if (level <= 1.5) return "#FFBF00";
-    if (level <= 2.5) return "#00A86B";
-    return "#0067A5";
-  });
-
-  if (itemBarChart) {
-    itemBarChart.data.labels = labels;
-    itemBarChart.data.datasets[0].data = percents;
-    itemBarChart.data.datasets[0].backgroundColor = bgColors;
-    itemBarChart.update();
-    return;
-  }
-
-  itemBarChart = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [
-        {
-          label: "Correct",
-          data: percents,
-          backgroundColor: bgColors
-        }
-      ]
-    },
-    options: {
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label(context) {
-              const idx = context.dataIndex;
-              return `${labels[idx]} SBG ${sbgLabels[idx]} – ${percents[idx]}%`;
-            }
-          }
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          max: 100,
-          ticks: {
-            callback(v) {
-              return v;
-            }
-          }
-        }
-      }
-    }
-  });
-}
-
-// ---------------- SBG QUESTION CARDS ----------------
-function buildSbgQuestionCards(teacherRecords, latestByStudentQuestion) {
-  const container = document.getElementById("sbg-question-cards");
-  if (!container) return;
-
-  container.innerHTML = "";
-
-  const sbgGroups = {};
-  teacherRecords.forEach((r) => {
-    const sbgKey = r.sbg.toString();
-    const qid = r.questionId;
-    if (!sbgGroups[sbgKey]) sbgGroups[sbgKey] = {};
-    if (!sbgGroups[sbgKey][qid]) sbgGroups[sbgKey][qid] = [];
-    sbgGroups[sbgKey][qid].push(r);
-  });
-
-  Object.keys(sbgGroups)
-    .sort((a, b) => Number(a) - Number(b))
-    .forEach((sbgKey) => {
-      const questions = sbgGroups[sbgKey];
-      const card = document.createElement("div");
-      card.className = "sbg-card";
-
-      let inner = `<div class="sbg-card-header">Level ${sbgKey}</div>`;
-      inner += `<div class="sbg-card-questions">`;
-
-      Object.keys(questions)
-        .sort((a, b) => Number(a) - Number(b))
-        .forEach((qid) => {
-          const qRecords = questions[qid];
-          const correct = qRecords.filter((r) => r.correct).length;
-          const total = qRecords.length || 1;
-          const pct = total ? Math.round((correct / total) * 100) : 0;
-
-          const byStudent = {};
-          qRecords.forEach((r) => {
-            const key = `${r.studentName}-${r.questionId}`;
-            const latest = latestByStudentQuestion[key];
-            if (!latest) return;
-            if (!byStudent[latest.studentName]) {
-              byStudent[latest.studentName] = latest;
-            }
-          });
-
-          const students = Object.values(byStudent).sort((a, b) =>
-            a.studentName.localeCompare(b.studentName)
-          );
-
-          inner += `<div class="sbg-question-tile">
-            <div class="sbg-question-header">
-              <span>Q${qid}</span>
-              <span>${pct}% correct</span>
-            </div>
-            <div class="sbg-question-students">
-              ${students
-                .map(
-                  (r) =>
-                    `<div class="sbg-question-student">${r.studentName} ${
-                      r.correct ? "✔" : "✘"
-                    }</div>`
-                )
-                .join("")}
-            </div>
-          </div>`;
-        });
-
-      inner += `</div>`;
-      card.innerHTML = inner;
-      container.appendChild(card);
-    });
-}
-
-// ---------------- ITEM ANALYSIS TABLE ----------------
-function renderItemAnalysis(records, itemAnalysisBody) {
-  itemAnalysisBody.innerHTML = "";
-
-  const byQuestion = {};
-  records.forEach((r) => {
-    const qid = r.questionId;
-    if (!byQuestion[qid]) byQuestion[qid] = [];
-    byQuestion[qid].push(r);
-  });
-
-  Object.keys(byQuestion)
-    .sort((a, b) => a - b)
-    .forEach((qid) => {
-      const group = byQuestion[qid];
-      const correct = group.filter((r) => r.correct).length;
-      const total = group.length || 1;
-      const percent = total ? Math.round((correct / total) * 100) : 0;
-      const sbgLevel = group[0].sbg;
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${qid}</td>
-        <td>${sbgLevel}</td>
-        <td>${percent}%</td>
-      `;
-      itemAnalysisBody.appendChild(tr);
-    });
-}
-
-function populateStudentDropdown(studentNames, studentSelect) {
-  studentSelect.innerHTML = `<option value="">Select a student</option>`;
-  studentNames
-    .sort((a, b) => a.localeCompare(b))
-    .forEach((name) => {
-      const opt = document.createElement("option");
-      opt.value = name;
-      opt.textContent = name;
-      studentSelect.appendChild(opt);
-    });
-}
-
-function buildLatestByStudentQuestion(teacherRecords) {
-  const latest = {};
-  teacherRecords.forEach((r) => {
-    const key = `${r.studentName}-${r.questionId}`;
-    if (!latest[key]) {
-      latest[key] = r;
-    } else if (
-      getAttemptKey(r.timestamp) > getAttemptKey(latest[key].timestamp)
-    ) {
-      latest[key] = r;
-    }
-  });
-  return latest;
-}
-
 // ---------------- STUDENT DETAIL ----------------
 function renderStudentSummaryAndAttempts(
   studentName,
@@ -795,12 +545,13 @@ function renderStudentSummaryAndAttempts(
     return;
   }
 
-const byAttempt = {};
-records.forEach((r) => {
-  const attemptId = r.attempt_id || getAttemptKey(r.timestamp);
-  if (!byAttempt[attemptId]) byAttempt[attemptId] = [];
-  byAttempt[attemptId].push(r);
-});
+  const byAttempt = {};
+  records.forEach((r) => {
+    const key = r.attempt_id || getAttemptKey(r.timestamp);
+    const attemptId = String(key);
+    if (!byAttempt[attemptId]) byAttempt[attemptId] = [];
+    byAttempt[attemptId].push(r);
+  });
 
   const attemptIds = Object.keys(byAttempt).sort();
   const totalAttempts = attemptIds.length;
@@ -824,8 +575,10 @@ records.forEach((r) => {
 
   attemptSelect.innerHTML = `<option value="">Select an attempt</option>`;
   attemptIds.forEach((id) => {
-    const date = new Date(Number(id));
-    const label = date.toLocaleString();
+    const numericId = Number(id);
+    const label = Number.isNaN(numericId)
+      ? id
+      : new Date(numericId).toLocaleString();
     const opt = document.createElement("option");
     opt.value = id;
     opt.textContent = label;
@@ -835,12 +588,14 @@ records.forEach((r) => {
 }
 
 function renderStudentAttemptItems(studentName, attemptId) {
-  const records = allRecords.filter(
-    (r) =>
+  const records = allRecords.filter((r) => {
+    const key = r.attempt_id || getAttemptKey(r.timestamp);
+    return (
       r.teacher === currentTeacher &&
       r.studentName === studentName &&
-      getAttemptKey(r.timestamp) === Number(attemptId)
-  );
+      String(key) === String(attemptId)
+    );
+  });
 
   const strip = document.getElementById("student-item-strip");
   if (!strip) return;
@@ -904,12 +659,13 @@ function sbgStripClass(level) {
 }
 
 function computeStudentCurrentSbg(recordsForStudent) {
-const byAttempt = {};
-recordsForStudent.forEach((r) => {
-  const attemptId = r.attempt_id || getAttemptKey(r.timestamp);
-  if (!byAttempt[attemptId]) byAttempt[attemptId] = [];
-  byAttempt[attemptId].push(r);
-});
+  const byAttempt = {};
+  recordsForStudent.forEach((r) => {
+    const key = r.attempt_id || getAttemptKey(r.timestamp);
+    const attemptId = String(key);
+    if (!byAttempt[attemptId]) byAttempt[attemptId] = [];
+    byAttempt[attemptId].push(r);
+  });
 
   const attemptIds = Object.keys(byAttempt).sort();
   const latest = byAttempt[attemptIds[attemptIds.length - 1]];
