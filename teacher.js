@@ -524,6 +524,76 @@ function renderDashboard(
     renderItemBarChart(teacherRecords);
   }
 // ---------------- SBG QUESTION CARDS ----------------
+// ---------------- SBG DOUGHNUT ----------------
+let sbgDoughnutChart = null;
+
+function renderSbgDoughnut(bands) {
+  const ctx = document.getElementById("sbg-doughnut");
+  if (!ctx) return;
+
+  const labels = [
+    "SBG 0.0–0.5",
+    "SBG 1.0–1.5",
+    "SBG 2.0–2.5",
+    "SBG 3.0"
+  ];
+  const data = [
+    bands["0.0-0.5"],
+    bands["1.0-1.5"],
+    bands["2.0-2.5"],
+    bands["3.0"]
+  ];
+  const colors = ["#F04923", "#FFBF00", "#00A86B", "#0067A5"];
+
+  if (sbgDoughnutChart) {
+    sbgDoughnutChart.data.datasets[0].data = data;
+    sbgDoughnutChart.update();
+    return;
+  }
+
+  sbgDoughnutChart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: colors,
+          borderColor: "#ffffff",
+          borderWidth: 2
+        }
+      ]
+    },
+    options: {
+      plugins: {
+        legend: {
+          position: "bottom",
+          align: "center",
+          labels: {
+            usePointStyle: true,
+            boxWidth: 12,
+            boxHeight: 12,
+            padding: 16
+          }
+        },
+        datalabels: {
+          color: "#ffffff",
+          font: {
+            weight: "bold"
+          },
+          formatter(value, context) {
+            const dataset = context.dataset.data;
+            const sum = dataset.reduce((a, b) => a + b, 0) || 1;
+            const pct = (value / sum) * 100;
+            return value ? `${pct.toFixed(0)}%` : "";
+          }
+        }
+      },
+      cutout: "60%"
+    }
+  });
+}
+
 function buildSbgQuestionCards(teacherRecords, latestByStudentQuestion) {
   const container = document.getElementById("sbg-question-cards");
   if (!container) return;
