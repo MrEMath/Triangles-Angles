@@ -531,6 +531,23 @@ function renderDashboard(
 }
 
 // ---------------- STUDENT DETAIL ----------------
+function buildLatestByStudentQuestion(teacherRecords) {
+  const latest = {};
+  teacherRecords.forEach((r) => {
+    const key = `${r.studentName}-${r.questionId}`;
+    const currentKey = r.attempt_id || getAttemptKey(r.timestamp);
+    if (!latest[key]) {
+      latest[key] = r;
+    } else {
+      const latestKey = latest[key].attempt_id || getAttemptKey(latest[key].timestamp);
+      if (currentKey > latestKey) {
+        latest[key] = r;
+      }
+    }
+  });
+  return latest;
+}
+
 function renderStudentSummaryAndAttempts(
   studentName,
   studentSummaryEl,
