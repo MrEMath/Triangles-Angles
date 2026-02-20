@@ -523,6 +523,77 @@ function renderDashboard(
     renderItemAnalysis(teacherRecords, itemAnalysisBody);
     renderItemBarChart(teacherRecords);
   }
+// ---------------- SBG QUESTION CARDS ----------------
+function buildSbgQuestionCards(teacherRecords, latestByStudentQuestion) {
+  const container = document.getElementById("sbg-question-cards");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const sbgGroups = {};
+  teacherRecords.forEach((r) => {
+    const sbgKey = r.sbg.toString();
+    const qid = r.questionId;
+    if (!sbgGroups[sbgKey]) sbgGroups[sbgKey] = {};
+    if (!sbgGroups[sbgKey][qid]) sbgGroups[sbgKey][qid] = [];
+    sbgGroups[sbgKey][qid].push(r);
+  });
+
+  Object.keys(sbgGroups)
+    .sort((a, b) => Number(a) - Number(b))
+    .forEach((sbgKey) => {
+      const questions = sbgGroups[sbgKey];
+      const card = document.createElement("div");
+      card.className = "sbg-card";
+
+      let inner = `<div class="sbg-card-header">Level ${sbgKey}</div>`;
+      inner += `<div class="sbg-card-questions">`;
+
+      Object.keys(questions)
+        .sort((a, b) => Number(a) - Number(b))
+        .forEach((qid) => {
+          const qRecords = questions[qid];
+          const correct = qRecords.filter((r) => r.correct).length;
+          const total = qRecords.length || 1;
+          const pct = total ? Math.round((correct / total) * 100) : 0;
+
+          const byStudent = {};
+          qRecords.forEach((r) => {
+            const key = `${r.studentName}-${r.questionId}`;
+            const latest = latestByStudentQuestion[key];
+            if (!latest) return;
+            if (!byStudent[latest.studentName]) {
+              byStudent[latest.studentName] = latest;
+            }
+          });
+
+          const students = Object.values(byStudent).sort((a, b) =>
+            a.studentName.localeCompare(b.studentName)
+          );
+
+          inner += `<div class="sbg-question-tile">
+            <div class="sbg-question-header">
+              <span>Q${qid}</span>
+              <span>${pct}% correct</span>
+            </div>
+            <div class="sbg-question-students">
+              ${students
+                .map(
+                  (r) =>
+                    `<div class="sbg-question-student">${r.studentName} ${
+                      r.correct ? "✔" : "✘"
+                    }</div>`
+                )
+                .join("")}
+            </div>
+          </div>`;
+        });
+
+      inner += `</div>`;
+      card.innerHTML = inner;
+      container.appendChild(card);
+    });
+}
 
   populateStudentDropdown(studentNames, studentSelect);
   studentSummaryEl.innerHTML = "";
